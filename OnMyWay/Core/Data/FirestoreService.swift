@@ -2,90 +2,83 @@
 //  FirestoreService.swift
 //  OnMyWay
 //
-//  Created by Riccardo Ceccarani on 12/12/25.
-//
-
-//
-//  FirestoreService.swift
-//  OnMyWay
-//
-//  Created by Riccardo Ceccarani on 12/12/25.
+//  Created by Gemini on 12/12/25.
 //
 
 import Foundation
 import FirebaseFirestore
 
-/// Servizio generico per operazioni CRUD su Firestore.
-/// Gestisce la serializzazione/deserializzazione automatica dei modelli Codable.
+/// Servizio generico per le operazioni CRUD su Firestore.
+/// Gestisce la codifica/decodifica dei modelli e le chiamate asincrone.
 final class FirestoreService {
     
     private let db = Firestore.firestore()
     
-    init() {
-        // Opzionale: Configurazione settings Firestore
-        let settings = FirestoreSettings()
-        // La persistenza offline è abilitata di default su iOS, ma possiamo esplicitarla
-        settings.isPersistenceEnabled = true
-        db.settings = settings
-    }
-    
-    // MARK: - WRITE (Create / Overwrite)
+    // MARK: - CRUD Operations
     
     /// Salva o sovrascrive un documento.
     /// - Parameters:
-    ///   - collection: Il nome della collezione (es. "users")
-    ///   - documentId: L'ID del documento.
-    ///   - data: L'oggetto da salvare (deve conformarsi a Encodable).
-    ///   - merge: Se true, aggiorna solo i campi presenti; se false, sovrascrive tutto.
-    func setData<T: Encodable>(collection: String, documentId: String, data: T, merge: Bool = false) async throws {
-        let ref = db.collection(collection).document(documentId)
-        try await ref.setData(from: data, merge: merge)
-    }
-    
-    // MARK: - READ (Single Document)
-    
-    /// Legge un singolo documento e lo converte nel tipo richiesto.
-    /// - Parameters:
-    ///   - collection: Il nome della collezione.
-    ///   - documentId: L'ID del documento.
-    /// - Returns: L'oggetto di tipo T popolato.
-    func getDocument<T: Decodable>(collection: String, documentId: String) async throws -> T {
-        let ref = db.collection(collection).document(documentId)
-        let snapshot = try await ref.getDocument()
+    ///   - path: Il percorso della collezione (es. "users")
+    ///   - id: L'ID del documento (opzionale, se nil viene generato da Firestore)
+    ///   - data: L'oggetto da salvare (deve conformarsi a Encodable)
+    ///   - merge: Se true, aggiorna solo i campi forniti; se false, sovrascrive tutto.
+    func setData<T: Encodable>(path: String, id: String? = nil, data: T, merge: Bool = false) async throws {
+        let collection = db.collection(path)
+        let document = id != nil ? collection.document(id!) : collection.document()
         
-        return try snapshot.data(as: T.self)
+        try document.setData(from: data, merge: merge)
     }
     
-    // MARK: - UPDATE (Partial Fields)
-    
-    /// Aggiorna specifici campi di un documento senza sovrascriverlo tutto.
-    /// Utile per aggiornare solo coordinate o status.
-    /// - Parameters:
-    ///   - collection: Il nome della collezione.
-    ///   - documentId: L'ID del documento.
-    ///   - fields: Dizionario chiave-valore con i campi da aggiornare.
-    func updateData(collection: String, documentId: String, fields: [String: Any]) async throws {
-        let ref = db.collection(collection).document(documentId)
-        try await ref.updateData(fields)
+    /// Recupera un singolo documento.
+    func getDocument<T: Decodable>(path: String, id: String) async throws -> T {
+        let document = try await db.collection(path).document(id).getDocument()
+        
+        guard document.exists else {
+            throw AppError.firestore("Documento non trovato in \(path)/\(id)")
+        }
+        
+        return try document.data(as: T.self)
     }
     
-    // MARK: - DELETE
+    /// Aggiorna campi specifici di un documento senza sovrascriverlo interamente.
+    /// Utile per aggiornare solo lo status o la posizione.
+    func updateFields(path: String, id: String, data: [String: Any]) async throws {
+        try await db.collection(path).document(id).updateData(data)
+    }
     
     /// Elimina un documento.
-    func deleteDocument(collection: String, documentId: String) async throws {
-        let ref = db.collection(collection).document(documentId)
-        try await ref.delete()
+    func deleteDocument(path: String, id: String) async throws {
+        try await db.collection(path).document(id).delete()
     }
     
-    // MARK: - HELPERS (References)
+    // MARK: - Real-time Listeners
     
-    /// Restituisce un riferimento a una collezione (utile per i Listener esterni).
-    func collectionRef(_ collection: String) -> CollectionReference {
-        return db.collection(collection)
-    }
-    
-    /// Restituisce un riferimento a un documento (utile per i Listener esterni).
-    func documentRef(collection: String, documentId: String) -> DocumentReference {
-        return db.collection(collection).document(documentId)
+    /// Osserva un documento in tempo reale e restituisce uno stream di aggiornamenti.
+    func listenToDocument<T: Decodable>(path: String, id: String) -> AsyncThrowingStream<T?, Error> {
+        return AsyncThrowingStream { continuation in
+            let listener = db.collection(path).document(id).addSnapshotListener { snapshot, error in
+                if let error = error {
+                    continuation.finish(throwing: error)
+                    return
+                }
+                
+                guard let snapshot = snapshot, snapshot.exists else {
+                    continuation.yield(nil) // Documento cancellato o non esistente
+                    return
+                }
+                
+                do {
+                    let data = try snapshot.data(as: T.self)
+                    continuation.yield(data)
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            
+            // Gestione della cancellazione dello stream
+            continuation.onTermination = { @Sendable _ in
+                listener.remove()
+            }
+        }
     }
 }

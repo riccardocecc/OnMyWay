@@ -31,27 +31,22 @@ final class AppDependencyContainer {
     init() {
         // 1. Inizializza i servizi di base (Data Layer)
         self.firestoreService = FirestoreService()
-        self.functionsManager = FunctionsManager()
+
         
         // 2. Inizializza i Manager (Core Logic)
         // L'ordine è importante se ci sono dipendenze tra manager
         
         self.authManager = AuthManager(firestoreService: firestoreService)
         
+        // MANTENIAMO GLI STUB DEGLI ALTRI MANAGER PER ORA PER NON ROMPERE IL COMPILATORE
+                // (Assicurati di passare i parametri corretti agli stub se li hai modificati)
+        self.functionsManager = FunctionsManager()
         self.notificationManager = NotificationManager(firestoreService: firestoreService)
-        
-        self.pairingManager = PairingManager(firestoreService: firestoreService,
-                                             authManager: authManager)
-        
+        self.pairingManager = PairingManager(firestoreService: firestoreService, authManager: authManager)
         self.locationManager = LocationManager()
-        
         self.geofenceManager = GeofenceManager()
-        
         self.activityManager = ActivityManager()
-        
         self.tripStateRestorer = TripStateRestorer(firestoreService: firestoreService)
-        
-        // TripManager è il più complesso e dipende da quasi tutti gli altri
         self.tripManager = TripManager(
             firestoreService: firestoreService,
             authManager: authManager,

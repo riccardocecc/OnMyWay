@@ -23,7 +23,7 @@ enum TripConnectionState {
 @Observable
 final class AppState {
     // MARK: - Dependencies
-    private let container: AppDependencyContainer
+    let container: AppDependencyContainer
     
     // MARK: - Authentication & User Data
     /// L'utente corrente con i dati del partner denormalizzati.
@@ -91,14 +91,8 @@ final class AppState {
     // MARK: - Setup & Recovery
     
     private func setupBindings() {
-        // Qui collegheremo i listener ai Manager.
-        // Esempio logico (da implementare quando AuthManager è pronto):
-        // Task {
-        //     for await user in container.authManager.userStream {
-        //         self.currentUser = user
-        //         if let user { self.fetchPartnerData(for: user) }
-        //     }
-        // }
+        // In futuro qui potremo osservare stream di dati,
+        // per ora la sincronizzazione avviene tramite i metodi di action.
     }
     
     /// Tenta di ripristinare lo stato dell'app dopo un kill o un crash.
@@ -111,6 +105,12 @@ final class AppState {
             // 1. Verifica sessione Auth
             try await container.authManager.checkSession()
             
+            // Sincronizza lo stato locale con quello del manager
+            if let user = container.authManager.user {
+                self.currentUser = user
+                print("✅ Utente ripristinato: \(user.displayName)")
+            }
+            
             // 2. Se loggato, tenta il ripristino del viaggio
             if isAuthenticated {
                 // TripStateRestorer verifica UserDefaults e Firestore
@@ -119,9 +119,8 @@ final class AppState {
                 if let trip = restoredTrip {
                     self.activeTrip = trip
                     // Se recuperiamo un trip, assumiamo che siamo "connected" o "offline"
-                    // Questo stato verrà raffinato dal TripManager
                     self.tripConnectionState = .connected
-                    print("✅ Viaggio ripristinato: \(trip.id)")
+                    print("✅ Viaggio ripristinato: \(trip.id ?? "unknown")")
                 }
             }
         } catch {
@@ -131,38 +130,46 @@ final class AppState {
     }
     
     // MARK: - User Actions (Facade)
+    
     func signInAnonymously() {
-            isLoading = true
-            
-            Task {
-                do {
-                    // Chiamata asincrona al manager
-                    let user = try await container.authManager.signInAnonymously()
-                    
-                    // Aggiornamento dello stato sul Main Actor (automatico con @Observable)
+        isLoading = true
+        
+        Task {
+            do {
+                // 1. Chiamata asincrona al manager (non restituisce valore, aggiorna stato interno)
+                try await container.authManager.signInAnonymously()
+                
+                // 2. Sincronizziamo lo stato su AppState (sul Main Actor)
+                if let user = container.authManager.user {
                     self.currentUser = user
-                    self.isLoading = false
                     
-                    // Verifica se dobbiamo recuperare dati del partner
-                    // if let user { await fetchPartnerData(for: user) } // Da implementare dopo
-                    
-                } catch {
-                    print("❌ Login Error: \(error.localizedDescription)")
-                    self.error = AppError.auth(error.localizedDescription)
-                    self.isLoading = false
+                    // TODO: Verifica se dobbiamo recuperare dati del partner
+                    // if let user { await fetchPartnerData(for: user) }
                 }
+                
+                self.isLoading = false
+                
+            } catch {
+                print("❌ Login Error: \(error.localizedDescription)")
+                self.error = AppError.auth(error.localizedDescription)
+                self.isLoading = false
             }
         }
+    }
+    
     /// Metodo helper per gestire il logout pulendo lo stato
     func signOut() {
         Task {
             do {
                 try await container.authManager.signOut()
-                self.currentUser = nil
-                self.partner = nil
-                self.activeTrip = nil
-                self.partnerTrip = nil
-                self.tripConnectionState = .idle
+                
+                await MainActor.run {
+                    self.currentUser = nil
+                    self.partner = nil
+                    self.activeTrip = nil
+                    self.partnerTrip = nil
+                    self.tripConnectionState = .idle
+                }
             } catch {
                 self.error = AppError.auth(error.localizedDescription)
             }
