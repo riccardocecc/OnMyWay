@@ -1,6 +1,7 @@
 
 import SwiftUI
-import FirebaseCore // <--- 1. IMPORTANTE: Aggiungi questo import
+import FirebaseCore
+import GoogleSignIn// <--- Aggiungi import
 @main
 struct OnMyWayApp: App {
     // 1. Adapter per AppDelegate
@@ -27,18 +28,16 @@ struct OnMyWayApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
-            // 4. Router Principale
-            // Gestisce la navigazione logica (Onboarding -> Pairing -> Home)
-            AppRouter()
-                // Iniettiamo AppState nell'environment così che i child views
-                // possano accedervi tramite @Environment(AppState.self)
-                .environment(appState)
-                .task {
-                    // All'avvio, tentiamo il ripristino dello stato
-                    // (es. se l'app era stata killata durante un viaggio)
-                    await appState.restoreState()
-                }
+            WindowGroup {
+                AppRouter()
+                    .environment(appState)
+                    .task {
+                        await appState.restoreState()
+                    }
+                    // Aggiungi questo modificatore per gestire il redirect di Google
+                    .onOpenURL { url in
+                        GIDSignIn.sharedInstance.handle(url)
+                    }
+            }
         }
-    }
 }

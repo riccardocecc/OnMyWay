@@ -12,7 +12,8 @@
 		42166B5F2EEB8FBF004692CC /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 42166B5E2EEB8FBF004692CC /* FirebaseFirestore */; };
 		42166B612EEB8FBF004692CC /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 42166B602EEB8FBF004692CC /* FirebaseFunctions */; };
 		42166B632EEB8FBF004692CC /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 42166B622EEB8FBF004692CC /* FirebaseMessaging */; };
-		42CA127E2EEC34CB00D4E995 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 42CA127D2EEC34CB00D4E995 /* .gitignore */; };
+		42CA12882EEC3E1E00D4E995 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 42CA12872EEC3E1E00D4E995 /* GoogleSignIn */; };
+		42CA128A2EEC3E1E00D4E995 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 42CA12892EEC3E1E00D4E995 /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,9 +40,23 @@
 		42CA127D2EEC34CB00D4E995 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		42CA127F2EEC392300D4E995 /* Exceptions for "OnMyWay" folder in "OnMyWay" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				.gitignore,
+				Info.plist,
+			);
+			target = 42166B062EEB7F39004692CC /* OnMyWay */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		42166B092EEB7F39004692CC /* OnMyWay */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				42CA127F2EEC392300D4E995 /* Exceptions for "OnMyWay" folder in "OnMyWay" target */,
+			);
 			path = OnMyWay;
 			sourceTree = "<group>";
 		};
@@ -64,9 +79,11 @@
 			files = (
 				42166B5B2EEB8FBF004692CC /* FirebaseAnalytics in Frameworks */,
 				42166B5D2EEB8FBF004692CC /* FirebaseAuth in Frameworks */,
+				42CA128A2EEC3E1E00D4E995 /* GoogleSignInSwift in Frameworks */,
 				42166B632EEB8FBF004692CC /* FirebaseMessaging in Frameworks */,
 				42166B5F2EEB8FBF004692CC /* FirebaseFirestore in Frameworks */,
 				42166B612EEB8FBF004692CC /* FirebaseFunctions in Frameworks */,
+				42CA12882EEC3E1E00D4E995 /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -133,6 +150,8 @@
 				42166B5E2EEB8FBF004692CC /* FirebaseFirestore */,
 				42166B602EEB8FBF004692CC /* FirebaseFunctions */,
 				42166B622EEB8FBF004692CC /* FirebaseMessaging */,
+				42CA12872EEC3E1E00D4E995 /* GoogleSignIn */,
+				42CA12892EEC3E1E00D4E995 /* GoogleSignInSwift */,
 			);
 			productName = OnMyWay;
 			productReference = 42166B072EEB7F39004692CC /* OnMyWay.app */;
@@ -218,6 +237,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				42166B592EEB8FBF004692CC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				42CA12862EEC3D5900D4E995 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 42166B082EEB7F39004692CC /* Products */;
@@ -236,7 +256,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				42CA127E2EEC34CB00D4E995 /* .gitignore in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -423,6 +442,7 @@
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OnMyWay/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -451,6 +471,7 @@
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OnMyWay/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -587,6 +608,14 @@
 				minimumVersion = 12.7.0;
 			};
 		};
+		42CA12862EEC3D5900D4E995 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -614,6 +643,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 42166B592EEB8FBF004692CC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseMessaging;
+		};
+		42CA12872EEC3E1E00D4E995 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 42CA12862EEC3D5900D4E995 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		42CA12892EEC3E1E00D4E995 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 42CA12862EEC3D5900D4E995 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

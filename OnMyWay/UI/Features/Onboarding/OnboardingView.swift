@@ -7,7 +7,7 @@
 
 import SwiftUI
 import AuthenticationServices
-
+import GoogleSignInSwift
 // MARK: - Data Model for Carousel
 struct OnboardingPage: Identifiable {
     let id = UUID()
@@ -53,40 +53,21 @@ struct OnboardingView: View {
             
             // MARK: - Footer / Actions
             VStack(spacing: 16) {
-                // 1. Sign in with Apple (Nativo)
-                SignInWithAppleButton(
-                    onRequest: { request in
-                        // Qui configureremo la richiesta (scope email/name)
-                        request.requestedScopes = [.fullName, .email]
-                    },
-                    onCompletion: { result in
-                        handleAppleLogin(result)
-                    }
-                )
-                .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
-                .frame(height: 50)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                
-                // 2. Bottone Anonimo/Debug (Per l'MVP)
-                Button(action: {
-                                    appState.signInAnonymously()
-                                }) {
-                                    if appState.isLoading {
-                                        ProgressView()
-                                            .tint(.primary)
-                                    } else {
-                                        Text("Continua come Ospite")
-                                    }
-                                }
-                                .buttonStyle(.secondaryAction)
-                                .disabled(appState.isLoading)
-                
-                Text("Continuando accetti i Termini di Servizio e la Privacy Policy.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 8)
+                            
+                            // Bottone Google Nativo (o custom)
+                            GoogleSignInButton(scheme: .dark, style: .wide, action: {
+                                handleGoogleLogin()
+                            })
+                            .frame(height: 50)
+                            .padding(.horizontal)
+                            
+                            // Nota: Abbiamo rimosso Apple ID e Guest Mode come richiesto
+                            
+                            Text("Continuando accetti i Termini di Servizio e la Privacy Policy.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.top, 8)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 40)
@@ -135,9 +116,24 @@ struct OnboardingView: View {
     
     // MARK: - Actions
     
-    private func handleAppleLogin(_ result: Result<ASAuthorization, Error>) {
-            // TODO: Implementare il login con Apple in AuthManager
-            print("Apple Login non ancora collegato")
+    private func handleGoogleLogin() {
+            Task {
+                do {
+                    // Nota: Inietta AuthManager nell'AppState o accedivi tramite il container
+                    // Esempio ipotetico di chiamata:
+                    // try await appState.loginWithGoogle()
+                    
+                    // Se non hai esposto il metodo in AppState, dovrai passarlo o accedervi sporcando un po' l'architettura per ora:
+                    // await container.authManager.signInWithGoogle()
+                    
+                    // SIMULAZIONE CODICE PER COLLEGARE UI A MANAGER:
+                    // Supponendo che tu abbia esposto `signInWithGoogle` in AppState:
+                    try await appState.signInWithGoogle()
+                    
+                } catch {
+                    print("❌ Errore Login Google: \(error.localizedDescription)")
+                }
+            }
         }
 }
 

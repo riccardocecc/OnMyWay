@@ -9,8 +9,6 @@ import Foundation
 import SwiftUI
 
 // MARK: - Dependency Container
-/// Contenitore per la Dependency Injection.
-/// Inizializza e mantiene in vita le istanze "Singleton" dei servizi e dei manager.
 final class AppDependencyContainer {
     
     // MARK: - Data Layer
@@ -18,6 +16,13 @@ final class AppDependencyContainer {
     
     // MARK: - Managers
     let authManager: AuthManager
+    // Gli altri manager sono ancora Stub o da implementare, ma se non hai creato i file reali
+    // per loro, dovrai mantenere i LORO stub, ma rimuovere quelli di Firestore e Auth.
+    
+    // NOTA: Se non hai ancora creato i file per PairingManager, NotificationManager, etc.
+    // devi mantenere le loro definizioni fittizie, ma RIMUOVERE FirestoreService e AuthManager
+    // perché per quelli abbiamo creato i file veri.
+    
     let pairingManager: PairingManager
     let notificationManager: NotificationManager
     let locationManager: LocationManager
@@ -27,19 +32,15 @@ final class AppDependencyContainer {
     let activityManager: ActivityManager
     let functionsManager: FunctionsManager
     
-    // MARK: - Initialization
     init() {
-        // 1. Inizializza i servizi di base (Data Layer)
+        // 1. Inizializza i servizi reali
         self.firestoreService = FirestoreService()
-
         
-        // 2. Inizializza i Manager (Core Logic)
-        // L'ordine è importante se ci sono dipendenze tra manager
-        
+        // 2. Inizializza AuthManager iniettando il servizio reale
         self.authManager = AuthManager(firestoreService: firestoreService)
         
-        // MANTENIAMO GLI STUB DEGLI ALTRI MANAGER PER ORA PER NON ROMPERE IL COMPILATORE
-                // (Assicurati di passare i parametri corretti agli stub se li hai modificati)
+        // --- STUB TEMPORANEI PER IL RESTO ---
+        // Se non hai ancora i file reali per questi, usiamo le classi Stub definite sotto.
         self.functionsManager = FunctionsManager()
         self.notificationManager = NotificationManager(firestoreService: firestoreService)
         self.pairingManager = PairingManager(firestoreService: firestoreService, authManager: authManager)
@@ -47,6 +48,7 @@ final class AppDependencyContainer {
         self.geofenceManager = GeofenceManager()
         self.activityManager = ActivityManager()
         self.tripStateRestorer = TripStateRestorer(firestoreService: firestoreService)
+        
         self.tripManager = TripManager(
             firestoreService: firestoreService,
             authManager: authManager,
@@ -61,13 +63,11 @@ final class AppDependencyContainer {
     }
 }
 
-// MARK: - Placeholders (STUBS)
-// Aggiungi questi stub temporanei per evitare errori di compilazione
-// finché non creeremo i file reali nella cartella Managers/ e Data/.
-
+// MARK: - REMAINING STUBS
+// Mantieni SOLO questi se non hai ancora creato i file reali corrispondenti.
+// HO RIMOSSO FirestoreService e AuthManager da qui perché ora sono reali.
 
 class FunctionsManager { init() {} }
-
 class PairingManager { init(firestoreService: FirestoreService, authManager: AuthManager) {} }
 class NotificationManager { init(firestoreService: FirestoreService) {} }
 class LocationManager { init() {} }

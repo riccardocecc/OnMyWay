@@ -23,7 +23,7 @@ enum TripConnectionState {
 @Observable
 final class AppState {
     // MARK: - Dependencies
-    let container: AppDependencyContainer
+    private let container: AppDependencyContainer
     
     // MARK: - Authentication & User Data
     /// L'utente corrente con i dati del partner denormalizzati.
@@ -32,7 +32,7 @@ final class AppState {
     
     /// Il partner collegato.
     /// Se nil, l'utente non ha ancora completato il pairing.
-    var partner: User? = nil // Usiamo User anche per il partner (modello simmetrico)
+    var partner: User? = nil
     
     /// ID della relazione di coppia (documento `pairs/{pairId}`)
     var pairId: String? = nil
@@ -62,19 +62,16 @@ final class AppState {
     }
     
     /// True se l'utente ha un partner collegato.
-    /// Basato sulla logica che se `partner` è popolato, il pairing è completo.
     var isPaired: Bool {
         partner != nil
     }
     
     /// True se c'è un viaggio in corso (o mio o del partner).
-    /// Utile per decidere se mostrare la Home Dashboard o la ActiveTripView.
     var hasActiveTrip: Bool {
         activeTrip != nil || partnerTrip != nil
     }
     
     /// Determina se il client può inviare aggiornamenti al partner.
-    /// Richiede che il token handshake sia completato e la rete sia disponibile.
     var canSendUpdates: Bool {
         tripConnectionState == .connected
     }
@@ -83,96 +80,96 @@ final class AppState {
     
     init(container: AppDependencyContainer) {
         self.container = container
-        
-        // Configurazione dei listener iniziali
         setupBindings()
     }
     
     // MARK: - Setup & Recovery
     
     private func setupBindings() {
-        // In futuro qui potremo osservare stream di dati,
-        // per ora la sincronizzazione avviene tramite i metodi di action.
+        // In uno scenario reale, qui osserveremmo lo stream dell'AuthManager.
+        // Poiché AuthManager aggiorna il suo stato internamente tramite il listener di Firebase,
+        // per l'MVP sincronizziamo manualmente durante le azioni o usiamo restoreState.
     }
     
     /// Tenta di ripristinare lo stato dell'app dopo un kill o un crash.
-    /// Chiamato da OnMyWayApp.swift all'avvio.
     func restoreState() async {
         do {
             isLoading = true
             defer { isLoading = false }
             
-            // 1. Verifica sessione Auth
+            // 1. Verifica sessione Auth (Google/Firebase)
             try await container.authManager.checkSession()
             
-            // Sincronizza lo stato locale con quello del manager
-            if let user = container.authManager.user {
-                self.currentUser = user
-                print("✅ Utente ripristinato: \(user.displayName)")
+            // Sincronizziamo l'utente dall'AuthManager allo stato globale
+            if let managerUser = container.authManager.user {
+                self.currentUser = managerUser
+                print("✅ Utente ripristinato: \(managerUser.displayName)")
+                
+                // 1b. Se loggato, recupera dati partner (Pairing check)
+                // TODO: Implementare fetch dati partner
             }
             
             // 2. Se loggato, tenta il ripristino del viaggio
             if isAuthenticated {
-                // TripStateRestorer verifica UserDefaults e Firestore
                 let restoredTrip = try await container.tripStateRestorer.restoreActiveTrip()
                 
                 if let trip = restoredTrip {
                     self.activeTrip = trip
-                    // Se recuperiamo un trip, assumiamo che siamo "connected" o "offline"
                     self.tripConnectionState = .connected
                     print("✅ Viaggio ripristinato: \(trip.id ?? "unknown")")
                 }
             }
         } catch {
             print("⚠️ Errore durante il ripristino stato: \(error)")
-            // Non blocchiamo l'app per un errore di restore, l'utente può ricominciare
         }
     }
     
-    // MARK: - User Actions (Facade)
+    // MARK: - User Actions (Auth)
     
-    func signInAnonymously() {
-        isLoading = true
-        
-        Task {
-            do {
-                // 1. Chiamata asincrona al manager (non restituisce valore, aggiorna stato interno)
-                try await container.authManager.signInAnonymously()
-                
-                // 2. Sincronizziamo lo stato su AppState (sul Main Actor)
-                if let user = container.authManager.user {
-                    self.currentUser = user
-                    
-                    // TODO: Verifica se dobbiamo recuperare dati del partner
-                    // if let user { await fetchPartnerData(for: user) }
-                }
-                
-                self.isLoading = false
-                
-            } catch {
-                print("❌ Login Error: \(error.localizedDescription)")
-                self.error = AppError.auth(error.localizedDescription)
-                self.isLoading = false
+    /// Avvia il flusso di login con Google.
+    /// Deve essere chiamato dal thread principale (MainActor).
+    @MainActor
+    func signInWithGoogle() async {
+        do {
+            isLoading = true
+            
+            // 1. Chiama il manager per il login (apre SFSafariViewController/Google App)
+            try await container.authManager.signInWithGoogle()
+            
+            // 2. Aggiorna lo stato locale con l'utente appena loggato
+            if let user = container.authManager.user {
+                self.currentUser = user
             }
+            
+            isLoading = false
+        } catch {
+            isLoading = false
+            self.error = AppError.auth(error.localizedDescription)
+            print("❌ Errore Login UI: \(error)")
         }
     }
     
-    /// Metodo helper per gestire il logout pulendo lo stato
+    /// Effettua il logout pulendo tutto lo stato.
     func signOut() {
         Task {
             do {
                 try await container.authManager.signOut()
                 
                 await MainActor.run {
+                    // Pulisce tutto lo stato in memoria
                     self.currentUser = nil
                     self.partner = nil
                     self.activeTrip = nil
                     self.partnerTrip = nil
                     self.tripConnectionState = .idle
+                    self.pairId = nil
                 }
             } catch {
                 self.error = AppError.auth(error.localizedDescription)
             }
         }
     }
+    
+    // MARK: - User Actions (Trip)
+    // Aggiungeremo qui startTrip, stopTrip etc.
 }
