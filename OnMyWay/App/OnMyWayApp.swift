@@ -1,6 +1,6 @@
 
 import SwiftUI
-
+import FirebaseCore // <--- 1. IMPORTANTE: Aggiungi questo import
 @main
 struct OnMyWayApp: App {
     // 1. Adapter per AppDelegate
@@ -16,6 +16,7 @@ struct OnMyWayApp: App {
     @State private var appState: AppState
 
     init() {
+        FirebaseApp.configure()
         // Inizializzazione delle dipendenze
         let container = AppDependencyContainer()
         self.container = container

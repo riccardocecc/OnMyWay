@@ -23,8 +23,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
         // 1. Configurazione Firebase
-        FirebaseApp.configure()
-        print("✅ Firebase Configured via AppDelegate")
         
         // 2. Configurazione Delegati Notifiche
         Messaging.messaging().delegate = self
@@ -33,7 +31,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // 3. Registrazione per notifiche remote
         // La richiesta di permesso all'utente verrà fatta poi nella UI (Onboarding),
         // ma qui prepariamo il sistema a ricevere il token.
-        application.registerForRemoteNotifications()
+        //application.registerForRemoteNotifications()
         
         return true
     }
