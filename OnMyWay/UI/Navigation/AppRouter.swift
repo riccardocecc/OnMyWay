@@ -43,5 +43,13 @@ struct AppRouter: View {
         // (es. quando l'utente completa il login o il pairing)
         .animation(.easeInOut(duration: 0.4), value: appState.isAuthenticated)
         .animation(.easeInOut(duration: 0.4), value: appState.isPaired)
+        .task(id: appState.currentUser?.id) {
+                    // Se c'è un utente loggato...
+                    if let userId = appState.currentUser?.id {
+                        print("🔄 AppRouter: Avvio sync real-time per \(userId)")
+                        // ...attiva l'ascolto continuo su Firestore
+                        appState.startRealtimeSync(for: userId)
+                    }
+                }
     }
 }

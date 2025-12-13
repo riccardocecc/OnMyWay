@@ -1,19 +1,21 @@
-//
-//  AppError.swift
-//  OnMyWay
-//
-//  Created by Riccardo Ceccarani on 12/12/25.
-//
+// Core/Models/AppError.swift
 
 import Foundation
 
-enum AppError: LocalizedError, Equatable {
+// 1. Aggiungi ", Identifiable" qui
+enum AppError: LocalizedError, Equatable, Identifiable {
     case auth(String)
     case firestore(String)
     case location(String)
     case pairing(String)
     case trip(String)
     case generic(String)
+    
+    // 2. Aggiungi questa proprietà computed richiesta dal protocollo
+    var id: String {
+        // Usiamo la descrizione stessa come ID, oppure un UUID random
+        return self.localizedDescription
+    }
     
     var errorDescription: String? {
         switch self {

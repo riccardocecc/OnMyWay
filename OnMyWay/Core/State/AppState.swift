@@ -82,14 +82,52 @@ final class AppState {
         self.container = container
         setupBindings()
     }
-    
+    var pairingManager: PairingManager {
+            return container.pairingManager
+        }
     // MARK: - Setup & Recovery
-    
+    private var listeners = FirestoreListeners()
     private func setupBindings() {
         // In uno scenario reale, qui osserveremmo lo stream dell'AuthManager.
         // Poiché AuthManager aggiorna il suo stato internamente tramite il listener di Firebase,
         // per l'MVP sincronizziamo manualmente durante le azioni o usiamo restoreState.
     }
+    
+    /// Chiamato dopo il login per avviare il sync real-time
+    func startRealtimeSync(for userId: String) {
+            listeners.startListeningToUser(userId: userId) { [weak self] updatedUser in
+                guard let self = self else { return }
+                
+                Task { @MainActor in
+                    // 1. Aggiorna l'utente corrente con animazione
+                    withAnimation {
+                        self.currentUser = updatedUser
+                    }
+                    
+                    // 2. Controlla e scarica il partner (FUORI da withAnimation perché è async)
+                    if let partnerId = updatedUser.partnerId, self.partner == nil {
+                        await self.fetchPartner(partnerId)
+                    }
+                }
+            }
+        }
+        
+        func stopRealtimeSync() {
+            listeners.stopListening()
+        }
+        
+    private func fetchPartner(_ partnerId: String) async {
+            do {
+                let partner: User = try await container.firestoreService.getDocument(path: "users", id: partnerId)
+                await MainActor.run {
+                    withAnimation { // <--- Aggiungi qui l'animazione
+                        self.partner = partner
+                    }
+                }
+            } catch {
+                print("Errore fetch partner: \(error)")
+            }
+        }
     
     /// Tenta di ripristinare lo stato dell'app dopo un kill o un crash.
     func restoreState() async {

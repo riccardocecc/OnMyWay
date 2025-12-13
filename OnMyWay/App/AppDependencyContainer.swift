@@ -43,6 +43,7 @@ final class AppDependencyContainer {
         // Se non hai ancora i file reali per questi, usiamo le classi Stub definite sotto.
         self.functionsManager = FunctionsManager()
         self.notificationManager = NotificationManager(firestoreService: firestoreService)
+        // Sostituisci questo nella init() del container
         self.pairingManager = PairingManager(firestoreService: firestoreService, authManager: authManager)
         self.locationManager = LocationManager()
         self.geofenceManager = GeofenceManager()
@@ -68,7 +69,6 @@ final class AppDependencyContainer {
 // HO RIMOSSO FirestoreService e AuthManager da qui perché ora sono reali.
 
 class FunctionsManager { init() {} }
-class PairingManager { init(firestoreService: FirestoreService, authManager: AuthManager) {} }
 class NotificationManager { init(firestoreService: FirestoreService) {} }
 class LocationManager { init() {} }
 class GeofenceManager { init() {} }
