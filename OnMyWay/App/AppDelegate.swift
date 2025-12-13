@@ -10,45 +10,32 @@ import FirebaseCore
 import FirebaseMessaging
 import UserNotifications
 
-// MARK: - App Delegate
-/// Gestisce gli eventi del ciclo di vita dell'applicazione a livello di sistema (UIKit).
-/// Responsabile per la configurazione di Firebase e delle Notifiche Push (APNs).
 class AppDelegate: NSObject, UIApplicationDelegate {
-    
-    // Riferimento a NotificationManager per aggiornare il token
-    // Nota: In un'architettura pura potremmo usare un Singleton o NotificationCenter,
-    // qui usiamo un approccio semplice per l'MVP.
     
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         
-        // 1. Configurazione Firebase
+        // 1. Firebase è già configurato in OnMyWayApp.init(), quindi NON lo chiamiamo qui.
         
-        // 2. Configurazione Delegati Notifiche
+        // 2. Configurazione Delegati Notifiche (Serve per intercettare i token)
         Messaging.messaging().delegate = self
         UNUserNotificationCenter.current().delegate = self
         
-        // 3. Registrazione per notifiche remote
-        // La richiesta di permesso all'utente verrà fatta poi nella UI (Onboarding),
-        // ma qui prepariamo il sistema a ricevere il token.
-        //application.registerForRemoteNotifications()
+        // 3. Richiesta preliminare (opzionale, meglio farla nella UI)
+        application.registerForRemoteNotifications()
         
+        print("📱 AppDelegate didFinishLaunching complete")
         return true
     }
     
     // MARK: - APNs Token Handling
     
-    // Chiamato quando la registrazione APNs ha successo
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        // Passiamo il token APNs a Firebase Messaging.
-        // Necessario per convertire il token APNs in token FCM o per l'auth via notifiche.
+        // Collega il token APNs a Firebase
         Messaging.messaging().apnsToken = deviceToken
-        
-        let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-        print("📡 APNs Token received: \(tokenString)")
+        print("📡 APNs Token registered")
     }
     
-    // Chiamato quando la registrazione APNs fallisce
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         print("❌ Failed to register for remote notifications: \(error.localizedDescription)")
     }
@@ -56,43 +43,29 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 // MARK: - UNUserNotificationCenterDelegate
 extension AppDelegate: UNUserNotificationCenterDelegate {
-    
-    // Gestisce come mostrare le notifiche quando l'app è in primo piano (Foreground)
+    // Mostra notifiche anche con app aperta
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        
-        // Per questo progetto, vogliamo mostrare le notifiche (banner/suono)
-        // anche se l'utente sta usando l'app (es. "Partner è arrivato").
         completionHandler([.banner, .sound, .badge])
     }
     
-    // Gestisce il tap sulla notifica
+    // Gestione tocco notifica
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        
-        let userInfo = response.notification.request.content.userInfo
-        print("👆 Notification tapped with info: \(userInfo)")
-        
-        // Qui potremmo gestire il deep linking in futuro (es. aprire direttamente la mappa)
-        
+        print("👆 Notification tapped")
         completionHandler()
     }
 }
 
-// MARK: - MessagingDelegate (Firebase)
+// MARK: - MessagingDelegate
 extension AppDelegate: MessagingDelegate {
-    
-    // Chiamato quando il token FCM viene aggiornato/rigenerato
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let fcmToken = fcmToken else { return }
+        print("🔥 Firebase Messaging Token aggiornato: \(fcmToken)")
         
-        print("🔥 Firebase Messaging Token: \(fcmToken)")
-        
-        // Nota: L'aggiornamento di questo token su Firestore avverrà
-        // tramite AuthManager/NotificationManager che osservano lo stato,
-        // oppure possiamo postare una notifica interna qui.
+        // Notifichiamo il resto dell'app che il token è cambiato
         NotificationCenter.default.post(name: Notification.Name("FCMTokenUpdated"), object: nil, userInfo: ["token": fcmToken])
     }
 }

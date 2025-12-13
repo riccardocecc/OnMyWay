@@ -23,6 +23,7 @@ struct PairingView: View {
                 .multilineTextAlignment(.center)
                 .padding()
             
+            // Bottone Pairing Esistente
             Button("Simula Pairing (Debug)") {
                 // Simuliamo il pairing
                 // Nella realtà chiameremmo pairingManager
@@ -46,6 +47,15 @@ struct PairingView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(.orange)
+            
+            // --- NUOVO BOTTONE LOGOUT ---
+            Button("Esci (Logout)") {
+                appState.signOut()
+            }
+            .buttonStyle(.bordered)
+            .tint(.red)
+            .padding(.top, 10)
         }
+        .padding() // Aggiunto padding generico al container
     }
 }

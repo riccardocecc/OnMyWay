@@ -7,6 +7,7 @@
 
 import Foundation
 import FirebaseFirestore
+import FirebaseAuth // <--- AGGIUNTO QUESTO IMPORT
 
 struct User: Identifiable, Codable, Equatable {
     // MARK: - Properties
@@ -54,5 +55,25 @@ struct User: Identifiable, Codable, Equatable {
         case pairId
         case partnerDisplayName
         case partnerFcmToken
+    }
+}
+
+// MARK: - EXTENSION PER INIZIALIZZAZIONE DA AUTH (NUOVO)
+extension User {
+    /// Crea un utente OnMyWay partendo dai dati di Firebase Auth
+    init(authData: FirebaseAuth.User) {
+        self.id = authData.uid
+        self.displayName = authData.displayName ?? "Utente"
+        self.email = authData.email
+        self.createdAt = Date()
+        
+        // I campi opzionali partono come nil
+        self.fcmToken = nil
+        self.activityPushToken = nil
+        self.homeLocation = nil
+        self.partnerId = nil
+        self.pairId = nil
+        self.partnerDisplayName = nil
+        self.partnerFcmToken = nil
     }
 }

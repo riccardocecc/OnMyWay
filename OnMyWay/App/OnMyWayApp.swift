@@ -1,43 +1,51 @@
+//
+//  OnMyWayApp.swift
+//  OnMyWay
+//
+//  Created by Riccardo Ceccarani on 12/12/25.
+//
 
 import SwiftUI
 import FirebaseCore
-import GoogleSignIn// <--- Aggiungi import
+import GoogleSignIn
+
 @main
 struct OnMyWayApp: App {
-    // 1. Adapter per AppDelegate
-    // Gestisce la configurazione iniziale di Firebase, APNs e State Restoration
+    // 1. Adapter per AppDelegate (Gestione notifiche)
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
-    // 2. Container per Dependency Injection
-    // Mantiene le istanze dei Manager (Auth, Location, Trip, etc.)
+    // 2. Container e Stato
+    // Non usiamo @State o init complessi qui per evitare race conditions,
+    // inizializziamo tutto nel blocco init() in ordine preciso.
     private let container: AppDependencyContainer
-
-    // 3. Single Source of Truth (Swift Observation)
-    // L'oggetto centrale che guida tutta la UI dell'app
     @State private var appState: AppState
 
     init() {
+        // A. CONFIGURAZIONE FIREBASE (Deve essere la prima cosa in assoluto)
         FirebaseApp.configure()
-        // Inizializzazione delle dipendenze
+        
+        // B. Inizializzazione delle dipendenze (Ora Firestore è sicuro da usare)
         let container = AppDependencyContainer()
         self.container = container
         
-        // Inizializzazione dello stato iniettando il container
-        // Usiamo State(initialValue:) per assicurarci che l'istanza sia creata una sola volta
+        // C. Inizializzazione dello stato
         self._appState = State(initialValue: AppState(container: container))
+        
+        print("🚀 OnMyWayApp Initialized")
     }
 
     var body: some Scene {
-            WindowGroup {
-                AppRouter()
-                    .environment(appState)
-                    .task {
-                        await appState.restoreState()
-                    }
-                    // Aggiungi questo modificatore per gestire il redirect di Google
-                    .onOpenURL { url in
-                        GIDSignIn.sharedInstance.handle(url)
-                    }
-            }
+        WindowGroup {
+            AppRouter()
+                .environment(appState)
+                .task {
+                    // Ripristino stato (es. se l'app è stata killata durante un viaggio)
+                    await appState.restoreState()
+                }
+                .onOpenURL { url in
+                    // Gestione redirect login Google
+                    GIDSignIn.sharedInstance.handle(url)
+                }
         }
+    }
 }

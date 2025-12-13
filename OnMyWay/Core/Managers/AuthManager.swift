@@ -6,31 +6,28 @@ import SwiftUI
 
 @Observable
 class AuthManager {
+
     private let firestoreService: FirestoreService
-    
+        // Aggiungiamo il riferimento diretto al DB per scrivere l'utente
+    private let db = Firestore.firestore()
     // Pubblichiamo l'utente corrente per chi ascolta
     var user: User?
     
     init(firestoreService: FirestoreService) {
-        self.firestoreService = firestoreService
-        
-        // Ascolta i cambiamenti di stato di Firebase Auth
-        Auth.auth().addStateDidChangeListener { [weak self] _, firUser in
-            if let firUser = firUser {
-                // Mappiamo l'utente Firebase nel nostro modello User
-                // Nota: In un caso reale dovremmo fare una fetch su Firestore per prendere gli altri dati
-                self?.user = User(
-                    id: firUser.uid,
-                    displayName: firUser.displayName ?? "Utente Google",
-                    email: firUser.email,
-                    createdAt: Date(),
-                    fcmToken: nil // Verrà aggiornato dal NotificationManager
-                )
-            } else {
-                self?.user = nil
+            self.firestoreService = firestoreService
+            
+            // Ascolta i cambiamenti di stato di Firebase Auth
+            Auth.auth().addStateDidChangeListener { [weak self] _, firUser in
+                if let firUser = firUser {
+                    // NOTA: Qui aggiorniamo solo lo stato locale temporaneamente.
+                    // I dati completi (es. partnerId) arriveranno dal listener su Firestore (che faremo dopo).
+                    // Per ora usiamo i dati di Auth.
+                    self?.user = User(authData: firUser)
+                } else {
+                    self?.user = nil
+                }
             }
         }
-    }
     
     /// Gestisce il flusso di login con Google
     @MainActor
@@ -60,7 +57,7 @@ class AuthManager {
             let authResult = try await Auth.auth().signIn(with: credential)
             
             // 5. Opzionale: Salva utente su Firestore
-            // try await firestoreService.saveUser(authResult.user)
+            try await ensureUserDocumentExists(user: authResult.user)
             
             print("✅ Login Google riuscito: \(authResult.user.uid)")
         }
@@ -77,4 +74,30 @@ class AuthManager {
         GIDSignIn.sharedInstance.signOut() // Logout Google SDK
         self.user = nil
     }
+    
+    // MARK: - Private Helpers
+        
+        /// Verifica se l'utente esiste su Firestore. Se non esiste, crea il documento iniziale.
+        private func ensureUserDocumentExists(user: FirebaseAuth.User) async throws {
+            let userRef = db.collection("users").document(user.uid)
+            
+            // Leggiamo il documento
+            let document = try await userRef.getDocument()
+            
+            if document.exists {
+                print("ℹ️ Utente già presente nel DB.")
+                // Opzionale: Aggiorna timestamp ultimo accesso o foto profilo se cambiata
+            } else {
+                print("🆕 Primo accesso! Creazione documento utente...")
+                
+                // Creiamo l'oggetto User usando l'extension che abbiamo aggiunto in User.swift
+                let newUser = User(authData: user)
+                
+                // Salviamo su Firestore
+                // try userRef.setData(from: newUser) gestisce automaticamente la codifica
+                try userRef.setData(from: newUser)
+                
+                print("✅ Documento utente creato su Firestore!")
+            }
+        }
 }
