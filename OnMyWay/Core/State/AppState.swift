@@ -142,9 +142,6 @@ final class AppState {
             if let managerUser = container.authManager.user {
                 self.currentUser = managerUser
                 print("✅ Utente ripristinato: \(managerUser.displayName)")
-                
-                // 1b. Se loggato, recupera dati partner (Pairing check)
-                // TODO: Implementare fetch dati partner
             }
             
             // 2. Se loggato, tenta il ripristino del viaggio

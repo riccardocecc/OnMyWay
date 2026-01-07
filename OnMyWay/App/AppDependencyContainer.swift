@@ -8,7 +8,6 @@
 import Foundation
 import SwiftUI
 
-// MARK: - Dependency Container
 final class AppDependencyContainer {
     
     // MARK: - Data Layer
@@ -16,29 +15,25 @@ final class AppDependencyContainer {
     
     // MARK: - Managers
     let authManager: AuthManager
-    // Gli altri manager sono ancora Stub o da implementare, ma se non hai creato i file reali
-    // per loro, dovrai mantenere i LORO stub, ma rimuovere quelli di Firestore e Auth.
-    
-    // NOTA: Se non hai ancora creato i file per PairingManager, NotificationManager, etc.
-    // devi mantenere le loro definizioni fittizie, ma RIMUOVERE FirestoreService e AuthManager
-    // perché per quelli abbiamo creato i file veri.
-    
     let pairingManager: PairingManager
-    
+    let locationManager: LocationManager
+    let tripStateRestorer: TripStateRestorer // <--- AGGIUNTO
     
     init() {
-        // 1. Inizializza i servizi reali
+        print("🏗️ Initializing AppDependencyContainer...")
+        
+        // 1. Services
         self.firestoreService = FirestoreService()
         
-        // 2. Inizializza AuthManager iniettando il servizio reale
+        // 2. Managers
         self.authManager = AuthManager(firestoreService: firestoreService)
+        self.locationManager = LocationManager()
         
-        // --- STUB TEMPORANEI PER IL RESTO ---
-      
+        // Inizializziamo il restorer passandogli il service
+        self.tripStateRestorer = TripStateRestorer(firestoreService: firestoreService) // <--- AGGIUNTO
+        
         self.pairingManager = PairingManager(firestoreService: firestoreService, authManager: authManager)
 
-       
         print("✅ AppDependencyContainer initialized")
     }
 }
-
